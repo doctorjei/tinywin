@@ -1,0 +1,23 @@
+PS E:\Install\Scripts> Get-WimImage -WimPath H:\sources\install.wim 
+
+
+Index : 1
+Name             : Windows Server 2012 R2 SERVERSTANDARDCORE
+Description      : Windows Server 2012 R2 SERVERSTANDARDCORE
+Size             : 7103186800
+Bootable         : No
+Architecture     : x64
+Hal              : acpiapic
+Version          : 6.4.9841
+ServicePackBuild : 0
+ServicePackLevel : 0
+Edition          : ServerStandard
+Installation     : Server Core
+ProductType      : ServerNT
+ProductSuite     : Terminal Server
+SystemRoot       : WINDOWS
+Directories      : 13574
+Files            : 62161
+Created          : 9/13/2014 4:13:23 AM
+Modified         : 9/13/2014 4:13:44 AM
+Languages        : en-US (Default)
