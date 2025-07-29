@@ -37,7 +37,7 @@ def main():
 
     logging.info(f"Buildpath / workspace set to {runtime.build_path}.")
     os.makedirs(prep_path := os.path.join(runtime.build_path, "prep"), exist_ok=True)
-#    prepare_build(prep_path, runtime.media_path, runtime.yes)
+    prepare_build(prep_path, runtime.media_path, runtime.yes)
 
     # Here, the user chooses the base image.
     logging.info("Image Records\n-------------")
