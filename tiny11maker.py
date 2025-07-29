@@ -18,101 +18,8 @@ from utils import YN_CHECK, valited_input, terminate
 RELEASE = "2025-07-alpha"
 BAD_INPUT_MSG = "%; please try again."
 
-
-# Unfortunately, the wimlib mount call crashes silently - so use the executable mount call.
+# HACK: Unfortunately, the wimlib mount call crashes silently - so use executable mount call.
 wimlib._use_executable_mount = True
-
-
-def prepare_build(workspace, source_media, overwrite=False):
-    # Get the media path if we don't have it yet.
-    if not source_media:
-        check = lambda p: None if not os.path.isdir(p) else p
-        prompt = "Please enter path for Windows media: "
-        source_media = validated_input(prompt, BAD_INPUT_MSG % "Invalid path", check)
-
-    if os.path.exists(workspace) and not overwrite:
-        prompt = f"{workspace} exists. Overwrite [y/N]? "
-        result = validated_input(prompt, BAD_INPUT_MSG % "Answer 'Y' or 'N'", YN_CHECK)
-        # Permissions are read only. Find a way to turn off attribs?
-
-        if not (result.upper() == 'Y'):
-            logging.info(f"Directory {runtime.build_path} is not empty; aborting.")
-            exit()
-
-    shutil.rmtree(workspace)
-
-    logging.info(f"Searching for install files in {source_media}...")
-    boot_image_path = os.path.join(source_media, "sources/boot.wim")
-    image_path = os.path.join(source_media, "sources/install.wim")
-    esd_path = os.path.join(source_media, "sources/install.esd")
-
-    # Handle error cases - no boot images and/or no installation images.
-    if not os.path.isfile(boot_image_path):
-        terminate("No boot images found; terminating.")
-
-    if not os.path.isfile(image_path) and not os.path.isfile(esd_path):
-        terminate(f"No installation images found; terminating.")
-
-    # If there's no WIM but there is an ESD file, attempt conversion/
-    if not os.path.isfile(image_path) and os.path.isfile(esd_path):
-        logging.info("Converting installation ESD into WIM; this may take a while...")
-        target_wim = wimfile.WimFile(os.path.join(workspace, "sources/install.wim"))
-
-        # Set parameters for export, then create the new image.
-        logging.info('NOTE: unable to check integrity (not implemented).')
-        esd_file = wimfile.WimFile.from_file(esd_path)
-        esd_file.set_output_compression_type(COMPRESSION_TYPE_LZMS)
-        esd_file.images[img_index].export_image(target_wim)
-        logging.info("Conversion successful.\n") # Sleep for 2 seconds? Clear screen?
-
-    # Copy installation media files (excluding install.esd, if present) to prep directory.
-    logging.info("Copying Windows installation media...")
-    copy_filter = shutil.ignore_patterns('install.esd')
-    shutil.copytree(source_media, workspace, dirs_exist_ok=True, ignore=copy_filter)
-    logging.info("Copy complete!\n") # Sleep for 2 seconds? Clear screen?
-
-
-def select_language(image, automated=False):
-    # Fetch the local language and list of languages from the image
-    languages = image.get_languages()
-    local_code = locale.getlocale()[0]
-    local_index = languages.index(local_code) if local_code in languages else -1
-
-    # If there are no languges, return error values that can be gracefully handled..
-    if len(languages) == 0:
-        return -1, ""
-
-    # Separate default language from rest of list; track offset.
-    if not languages[0]:
-        default_language = -1
-        offset = 1
-
-    elif not type(languages[0]) is int:
-        default_language = 0
-        offset = 0
-
-    else:
-        default_language = languages[0]
-        offset = 1
-
-    # If there's only one language of the system is in automation mode, go with the default.
-    if (len(languages) - offset) == 0 or automated:
-        language_index = default_language if default_language >= offset else offset
-
-        if automated and default_language < offset:
-            logging.warn("No default language, but in automated mode; defaulting to first.")
-
-    # If we get here, it means that we have multiple languages, so the user should select one.
-    else:
-        logging.info("Languages Available:\n--------------------")
-        for count in range(offset, len(languages)):
-            logging.info(f"{count}. {languages[count]}")
-
-        check = lambda k: None if (int(k) > len(languages) or int(k) < offset) else int(k)
-        prompt = "Select a language for image: "
-        language_index = validated_input(prompt, BAD_INPUT_MSG % "Invalid index", check)
-
-    return language_index, str(languages[language_index])
 
 
 def main():
@@ -291,83 +198,96 @@ def main():
     #Stop-Transcript
 
 
-## this function allows PowerShell to take ownership of the Scheduled Tasks registry key from TrustedInstaller. Based on Jose Espitia's script.
-# example from above: enable_privilege('SeTakeOwnershipPrivilege')
-def enable_privilege(parameter): # ?
-    pass
-    # param(
-    #  [ValidateSet(
-    #   "SeAssignPrimaryTokenPrivilege", "SeAuditPrivilege", "SeBackupPrivilege",
-    #   "SeChangeNotifyPrivilege", "SeCreateGlobalPrivilege", "SeCreatePagefilePrivilege",
-    #   "SeCreatePermanentPrivilege", "SeCreateSymbolicLinkPrivilege", "SeCreateTokenPrivilege",
-    #   "SeDebugPrivilege", "SeEnableDelegationPrivilege", "SeImpersonatePrivilege", "SeIncreaseBasePriorityPrivilege",
-    #   "SeIncreaseQuotaPrivilege", "SeIncreaseWorkingSetPrivilege", "SeLoadDriverPrivilege",
-    #   "SeLockMemoryPrivilege", "SeMachineAccountPrivilege", "SeManageVolumePrivilege",
-    #   "SeProfileSingleProcessPrivilege", "SeRelabelPrivilege", "SeRemoteShutdownPrivilege",
-    #   "SeRestorePrivilege", "SeSecurityPrivilege", "SeShutdownPrivilege", "SeSyncAgentPrivilege",
-    #   "SeSystemEnvironmentPrivilege", "SeSystemProfilePrivilege", "SeSystemtimePrivilege",
-    #   "SeTakeOwnershipPrivilege", "SeTcbPrivilege", "SeTimeZonePrivilege", "SeTrustedCredManAccessPrivilege",
-    #   "SeUndockPrivilege", "SeUnsolicitedInputPrivilege")]
-    # $Privilege,
-      ## The process on which to adjust the privilege. Defaults to the current process.
-    # $ProcessId = $pid,
-    ## Switch to disable the privilege, rather than enable it.
-    #  [Switch] $Disable
-    # )
-    # $definition = @'
-    # using System;
-    # using System.Runtime.InteropServices;
-    #
-    # public class AdjPriv
-    # {
-    #  [DllImport("advapi32.dll", ExactSpelling = true, SetLastError = true)]
-    #  internal static extern bool AdjustTokenPrivileges(IntPtr htok, bool disall,
-    #   ref TokPriv1Luid newst, int len, IntPtr prev, IntPtr relen);
+def prepare_build(workspace, source_media, overwrite=False):
+    # Get the media path if we don't have it yet.
+    if not source_media:
+        check = lambda p: None if not os.path.isdir(p) else p
+        prompt = "Please enter path for Windows media: "
+        source_media = validated_input(prompt, BAD_INPUT_MSG % "Invalid path", check)
 
-    #  [DllImport("advapi32.dll", ExactSpelling = true, SetLastError = true)]
-    #  internal static extern bool OpenProcessToken(IntPtr h, int acc, ref IntPtr phtok);
-    #  [DllImport("advapi32.dll", SetLastError = true)]
-    #  internal static extern bool LookupPrivilegeValue(string host, string name, ref long pluid);
-    #  [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    #  internal struct TokPriv1Luid
-    #  {
-    #   public int Count;
-    #   public long Luid;
-    #   public int Attr;
-    #  }
-    #
-    #  internal const int SE_PRIVILEGE_ENABLED = 0x00000002;
-    #  internal const int SE_PRIVILEGE_DISABLED = 0x00000000;
-    #  internal const int TOKEN_QUERY = 0x00000008;
-    #  internal const int TOKEN_ADJUST_PRIVILEGES = 0x00000020;
-    #  public static bool EnablePrivilege(long processHandle, string privilege, bool disable)
-    #  {
-    #   bool retVal;
-    #   TokPriv1Luid tp;
-    #   IntPtr hproc = new IntPtr(processHandle);
-    #   IntPtr htok = IntPtr.Zero;
-    #   retVal = OpenProcessToken(hproc, TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, ref htok);
-    #   tp.Count = 1;
-    #   tp.Luid = 0;
-    #   if(disable)
-    #   {
-    #    tp.Attr = SE_PRIVILEGE_DISABLED;
-    #   }
-    #   else
-    #   {
-    #    tp.Attr = SE_PRIVILEGE_ENABLED;
-    #   }
-    #   retVal = LookupPrivilegeValue(null, privilege, ref tp.Luid);
-    #   retVal = AdjustTokenPrivileges(htok, false, ref tp, 0, IntPtr.Zero, IntPtr.Zero);
-    #   return retVal;
-    #  }
-    # }
-    #'@
-    #
-    # $processHandle = (Get-Process -id $ProcessId).Handle
-    # $type = Add-Type $definition -PassThru
-    # $type[0]::EnablePrivilege($processHandle, $Privilege, $Disable)
-    #}
+    if os.path.exists(workspace) and not overwrite:
+        prompt = f"{workspace} exists. Overwrite [y/N]? "
+        result = validated_input(prompt, BAD_INPUT_MSG % "Answer 'Y' or 'N'", YN_CHECK)
+        # Permissions are read only. Find a way to turn off attribs?
+
+        if not (result.upper() == 'Y'):
+            logging.info(f"Directory {runtime.build_path} is not empty; aborting.")
+            exit()
+
+    shutil.rmtree(workspace)
+
+    logging.info(f"Searching for install files in {source_media}...")
+    boot_image_path = os.path.join(source_media, "sources/boot.wim")
+    image_path = os.path.join(source_media, "sources/install.wim")
+    esd_path = os.path.join(source_media, "sources/install.esd")
+
+    # Handle error cases - no boot images and/or no installation images.
+    if not os.path.isfile(boot_image_path):
+        terminate("No boot images found; terminating.")
+
+    if not os.path.isfile(image_path) and not os.path.isfile(esd_path):
+        terminate(f"No installation images found; terminating.")
+
+    # If there's no WIM but there is an ESD file, attempt conversion/
+    if not os.path.isfile(image_path) and os.path.isfile(esd_path):
+        logging.info("Converting installation ESD into WIM; this may take a while...")
+        target_wim = wimfile.WimFile(os.path.join(workspace, "sources/install.wim"))
+
+        # Set parameters for export, then create the new image.
+        logging.info('NOTE: unable to check integrity (not implemented).')
+        esd_file = wimfile.WimFile.from_file(esd_path)
+        esd_file.set_output_compression_type(COMPRESSION_TYPE_LZMS)
+        esd_file.images[img_index].export_image(target_wim)
+        logging.info("Conversion successful.\n") # Sleep for 2 seconds? Clear screen?
+
+    # Copy installation media files (excluding install.esd, if present) to prep directory.
+    logging.info("Copying Windows installation media...")
+    copy_filter = shutil.ignore_patterns('install.esd')
+    shutil.copytree(source_media, workspace, dirs_exist_ok=True, ignore=copy_filter)
+    logging.info("Copy complete!\n") # Sleep for 2 seconds? Clear screen?
+
+
+def select_language(image, automated=False):
+    # Fetch the local language and list of languages from the image
+    languages = image.get_languages()
+    local_code = locale.getlocale()[0]
+    local_index = languages.index(local_code) if local_code in languages else -1
+
+    # If there are no languges, return error values that can be gracefully handled..
+    if len(languages) == 0:
+        return -1, ""
+
+    # Separate default language from rest of list; track offset.
+    if not languages[0]:
+        default_language = -1
+        offset = 1
+
+    elif not type(languages[0]) is int:
+        default_language = 0
+        offset = 0
+
+    else:
+        default_language = languages[0]
+        offset = 1
+
+    # If there's only one language of the system is in automation mode, go with the default.
+    if (len(languages) - offset) == 0 or automated:
+        language_index = default_language if default_language >= offset else offset
+
+        if automated and default_language < offset:
+            logging.warn("No default language, but in automated mode; defaulting to first.")
+
+    # If we get here, it means that we have multiple languages, so the user should select one.
+    else:
+        logging.info("Languages Available:\n--------------------")
+        for count in range(offset, len(languages)):
+            logging.info(f"{count}. {languages[count]}")
+
+        check = lambda k: None if (int(k) > len(languages) or int(k) < offset) else int(k)
+        prompt = "Select a language for image: "
+        language_index = validated_input(prompt, BAD_INPUT_MSG % "Invalid index", check)
+
+    return language_index, str(languages[language_index])
 
 
 if __name__ == "__main__":

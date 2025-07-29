@@ -1,9 +1,9 @@
 import logging
 
-from utils import delete_filesets
+from utils import delete_paths
 
-def remove_edge_browser(image, mount_path):
-    # TODO: Use removal_steps to delete files.
+
+def remove_edge(image, mount_path):
     architecture = image.architecture
     if (architecture == 'x86_64' or architecture == 'amd64'):
         architecture = 'x64'
@@ -11,7 +11,7 @@ def remove_edge_browser(image, mount_path):
     if not architecture:
         logging.warning("Architecture information not found.")
 
-    elif archtecture == 'x64': # Should result in a list (probably of one)
+    elif archtecture == 'x64':
         arch_paths = ["Windows/WinSxS/amd64_microsoft-edge-webview_31bf3856ad364e35*"]
 
     elif architecture == 'arm64':
@@ -21,4 +21,5 @@ def remove_edge_browser(image, mount_path):
         logging.warning(f"Unknown architecture: {architecture}")
         arch_paths = []
 
-    delete_filesets(arch_paths)
+    delete_paths(arch_paths) # TODO: How to handle this...
+

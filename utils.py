@@ -23,7 +23,26 @@ def terminate(msg="Unspecificed fatal error."):
     exit()
 
 
-def delete_filesets(base, paths_to_remove):
+# Get a variable's value from the Pyhton VM.
+def get_identifier(name):
+    try:
+        return locals()[name]
+    except:
+        pass
+    try:
+        return globals()[name]
+    except:
+        return None
+
+
+def delete_paths(base, paths_to_remove):
     for target_path in paths_to_remove:
-        full_path = os.path.join(base, target_path)
         # Take ownership and remove the path completely.
+        full_path = os.path.join(base, target_path)
+
+
+def copy_paths(base, copy_pairs):
+    for src, dest in copy_pairs:
+        src = os.path.abspath(src) if not os.path.isabs(src) else src
+        dest = os.path.join(base, dest) if not os.path.isabs(dest) else dest
+        shutil.copytree(src, dest)
