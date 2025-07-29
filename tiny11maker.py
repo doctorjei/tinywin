@@ -30,21 +30,6 @@ YN_CHECK = lambda r: None if not len(r) or (r.upper()[0] != 'Y' and r.upper()[0]
 wimlib._use_executable_mount = True
 
 
-# Packages and registry entries for various applications
-removal_steps = {
-  "edge_browser": {
-    "Packages": ['Microsoft.MicrosoftEdge.Stable', 'Microsoft.Edge.GameAssist'], # 3M, 0.2M
-    "Add_Registry": {},
-    "Delete_Registry": {},
-    "Delete_File": ["Program Files (x86)/Microsoft/Edge",
-                    "Program Files (x86)/Microsoft/EdgeCore",
-                    "Program Files (x86)/Microsoft/EdgeUpdate",
-                    "Program Files (x86)/Microsoft/EdgeWebView"],
-    "To_Copy": {},
-    "Callable:": None # remove_edge_browser # Params: iamge, mouth_path
-  }
-}
-
 def validated_input(prompt, error_msg, validator):
     result = input(prompt)
     while not (result := validator(result)):

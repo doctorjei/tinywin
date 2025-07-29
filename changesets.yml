@@ -1,0 +1,19 @@
+edge_browser:
+  registry:
+      update:
+#       - ["SOFTWARE\\SOME_KEY_NAME", 42]
+      delete:
+        - "_$WinCurrent$_\\Uninstall\\Microsoft Edge"
+        - "_$WinCurent$_\\Uninstall\\Microsoft Edge Update"
+      unprovision:
+        - Microsoft.MicrosoftEdge.Stable # 3M
+        - Microsoft.Edge.GameAssist      # 0.2M
+  delete_path:
+    - "Program Files (x86)/Microsoft/Edge"
+    - "Program Files (x86)/Microsoft/EdgeCore"
+    - "Program Files (x86)/Microsoft/EdgeUpdate"
+    - "Program Files (x86)/Microsoft/EdgeWebView"
+  copy_path:
+#    - [SRC_PATH, DEST_PATH]
+  callable: ["special_calls", "remove_edge"] # Format: [module, name]. If module is "" or None, check variables.
+  dependents:
