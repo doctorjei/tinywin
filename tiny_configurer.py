@@ -4,6 +4,7 @@ import configparser
 import logging
 import os
 import sys
+import saneyaml
 
 from configparser import DEFAULTSECT as _ROOT_
 #import configparser.UNNAMED_SECTION as _ROOT_
@@ -11,7 +12,10 @@ from configparser import DEFAULTSECT as _ROOT_
 
 DEFAULT_LOG_FILE = "./tiny.log"
 DEFAULT_CONFIG_FILE = "./tiny11.ini"
+DEFAULT_CHANGESETS = "./changesets.yml"
+
 DEFAULT_CONFIG = {_ROOT_ : {}}
+
 #DEFAULT_CONFIG = {_ROOT_ : {'logfile': './tiny11.log'}}
 
 LOG_FORMATS = { logging.INFO:     "%(message)s",
@@ -59,7 +63,8 @@ def parse_arguments():
     parser.add_argument('media_path', nargs='?', default=None, help='installation media path')
     parser.add_argument('build_path', nargs='?', default=None, help='temporary (build) path')
     parser.add_argument('-y', '--yes', action='store_true', help='overwrite existing data')
-    parser.add_argument('--conf_file', default=None, help='path to builder config file')
+    parser.add_argument('--run_conf', default=None, help='runtime configuration file')
+    parser.add_argument('--changesets', default=DEFAULT_CHANGES, help='changesets file (YAML)')
     parser.add_argument('--log_level', choices=err_map.keys(), help="set logging level")
     parser.add_argument('--log_file', default='', nargs='?', help='log to file')
     rt = parser.parse_args(sys.argv[1:])
@@ -78,18 +83,19 @@ def initialize():
     config = None
 
     # If there's a config file provided, open and parse it.
-    if not runtime.conf_file and os.path.isfile(DEFAULT_CONFIG_FILE):
-        runtime.conf_file = DEFAULT_CONFIG_FILE
+    if not runtime.run_conf and os.path.isfile(DEFAULT_CONFIG_FILE):
+        runtime.run_conf = DEFAULT_CONFIG_FILE
 
-    if runtime.conf_file:
+    if runtime.run_conf:
         try:
-            logging.info(f"Loading config file: [{runtime.conf_file}]")
-            conf_file = open(runtime.conf_file, "r")
-            config = configparser.ConfigParser()
-            config.read(conf_file)
+            logging.info(f"Loading config file: [{runtime.run_conf}]")
+            with open(runtime.run_conf, "r") as conf_file:
+#            conf_file = open(runtime.conf_file, "r")
+                config = configparser.ConfigParser()
+                config.read(conf_file)
 
         # If there's an error, log it, then load the default config.
-        except Exception as e:
+        except Exception as e: # TODO: Remove? We have "with" now...
             logging.warning(f"Couldn't read config file: [{type(e).__name__}]")
             config = None
 
@@ -117,5 +123,11 @@ def initialize():
         logging.info(f"Log file: [{runtime.log_file}]")
         logging.basicConfig(filename=runtime.log_file, level=runtime.log_level)
         formatter.refresh_handlers(logging._handlerList) # Reprocess handlers.
+
+    if runtime.changesets:
+        with open(runtime.run_conf, "r") as changes_file:
+            runtime.changesets = saneyaml.load(changes_file.read())
+    else:
+        logging.warn("Warning: no changesets detected. This will result in no image changes.")
 
     return runtime, config

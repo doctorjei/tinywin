@@ -59,51 +59,20 @@ def main():
     # Fetch some critical image information (with user input as needed).
     language_index, language_code = select_language(base_image, runtime.yes)
     logging.info(f"Successfully identified language '{language_code}' (#{language_index}).")
-    exit()
 
-    logging.info("Removing Edge and connected packages...")
-    remove_edge_browser(image, mount_path)
+    if runtime.changesets:
+        os_changes = changesets.get("os_image")
+        boot_changes = changesets.get("boot_image")
+    else:
+        logging.warn("No changesets - nothing to modify!")
 
-    # Remove packages and applications.
-    logging.info("Removing packages...")
-    remove_packages(mount_path)
-    logging.info("Removing OneDrive...")
-    remove_onedrive(image, mount_path)
-    logging.info("Application removal complete!")
-
-    # Update the registry.
-    logging.info("Loading registry...")
-    load_registry()
-    logging.info("Bypassing system requirements on the system image")
-    bypass_requirements()
-    logging.info("Disabling Sponsored Apps")
-    disable_sponsored_apps()
-    logging.info("Disabling Chat icon")
-    disable_chat()
-    logging.info("Removing Edge related registries")
-    delete_edge_registry()
-    logging.info("Disabling OneDrive folder backup")
-    disable_onedrive_registry()
-    logging.info("Prevents installation or DevHome and Outlook:")
-    disable_devhome_outlook()
-    logging.info('Deleting Application Compatibility Appraiser')
-    delete_miscelaneous()
-    logging.info("Disabling Reserved Storage")
-    disable_reserved()
-    logging.info("Enabling Local Accounts on OOBE")
-    enable_oobe()
-    logging.info("Disabling User Telemetry:")
-    disable_user_telemetry()
-    logging.info("Disabling System Telemetry:")
-    disable_system_telemetry()
-    logging.info("Disabling BitLocker Device Encryption")
-    disable_bitlocker()
-    logging.info("Owner changed to Administrators.")
-    reset_ownership()
-    logging.info("Unmounting Registry...")
-    unload_registry()
+    # If there are OS image changes, apply them while we have it mounted.
+    if os_changes:
+        execute_changesets(changesets, image, mount_path)
 
     logging.info("Cleaning up image and unmounting base...")
+    image.unmount(mount_path, flags=?????)
+
     #Repair-WindowsImage -Path $ScratchDisk\scratchdir -StartComponentCleanup -ResetBase
     #Dismount-WindowsImage -Path $ScratchDisk\scratchdir -Save
 
@@ -117,49 +86,25 @@ def main():
     #Start-Sleep -Seconds 2
     #Clear-Host
 
-    logging.info("Mounting boot image:")
-    #$wimFilePath = "$ScratchDisk\tiny11\sources\boot.wim"
-    # & takeown "/F" $wimFilePath | Out-Null
-    # & icacls $wimFilePath "/grant" "$($adminGroup.Value):(F)"
-    #Set-ItemProperty -Path $wimFilePath -Name IsReadOnly -Value $false
-    #Mount-WindowsImage -ImagePath $ScratchDisk\tiny11\sources\boot.wim -Index 2 -Path $ScratchDisk\scratchdir
+    if boot_changes:
+        logging.info("Mounting boot image:")
+        #$wimFilePath = "$ScratchDisk\tiny11\sources\boot.wim"
+        # & takeown "/F" $wimFilePath | Out-Null
+        # & icacls $wimFilePath "/grant" "$($adminGroup.Value):(F)"
+        #Set-ItemProperty -Path $wimFilePath -Name IsReadOnly -Value $false
+        #Mount-WindowsImage -ImagePath $ScratchDisk\tiny11\sources\boot.wim -Index 2 -Path $Scratch>
+        #base_image = wim_file.images[img_index]
+        boot_image.mount(boot_mount_path, flags=image.MOUNT_READWRITE, staging=boot_staging_path)
+        logging.info(f"Successfully mounted boot image at {mount_path}.")
+        execute_changesets(boot_changes, boot_image, boot_mount_path)
+        logging.info("Unmounting image...")
+        #Dismount-WindowsImage -Path $ScratchDisk\scratchdir -Save
+        #Clear-Host
 
-    logging.info("Loading registry...")
-    # reg load HKLM\zCOMPONENTS $ScratchDisk\scratchdir\Windows\System32\config\COMPONENTS
-    # reg load HKLM\zDEFAULT $ScratchDisk\scratchdir\Windows\System32\config\default
-    # reg load HKLM\zNTUSER $ScratchDisk\scratchdir\Users\Default\ntuser.dat
-    # reg load HKLM\zSOFTWARE $ScratchDisk\scratchdir\Windows\System32\config\SOFTWARE
-    # reg load HKLM\zSYSTEM $ScratchDisk\scratchdir\Windows\System32\config\SYSTEM
-
-    logging.info("Bypassing system requirements (on the setup image):")
-    # & 'reg' 'add' 'HKLM\zDEFAULT\Control Panel\UnsupportedHardwareNotificationCache' '/v' 'SV1' '/t' 'REG_DWORD' '/d' '0' '/f' | Out-Null
-    # & 'reg' 'add' 'HKLM\zDEFAULT\Control Panel\UnsupportedHardwareNotificationCache' '/v' 'SV2' '/t' 'REG_DWORD' '/d' '0' '/f' | Out-Null
-    # & 'reg' 'add' 'HKLM\zNTUSER\Control Panel\UnsupportedHardwareNotificationCache' '/v' 'SV1' '/t' 'REG_DWORD' '/d' '0' '/f' | Out-Null
-    # & 'reg' 'add' 'HKLM\zNTUSER\Control Panel\UnsupportedHardwareNotificationCache' '/v' 'SV2' '/t' 'REG_DWORD' '/d' '0' '/f' | Out-Null
-    # & 'reg' 'add' 'HKLM\zSYSTEM\Setup\LabConfig' '/v' 'BypassCPUCheck' '/t' 'REG_DWORD' '/d' '1' '/f' | Out-Null
-    # & 'reg' 'add' 'HKLM\zSYSTEM\Setup\LabConfig' '/v' 'BypassRAMCheck' '/t' 'REG_DWORD' '/d' '1' '/f' | Out-Null
-    # & 'reg' 'add' 'HKLM\zSYSTEM\Setup\LabConfig' '/v' 'BypassSecureBootCheck' '/t' 'REG_DWORD' '/d' '1' '/f' | Out-Null
-    # & 'reg' 'add' 'HKLM\zSYSTEM\Setup\LabConfig' '/v' 'BypassStorageCheck' '/t' 'REG_DWORD' '/d' '1' '/f' | Out-Null
-    # & 'reg' 'add' 'HKLM\zSYSTEM\Setup\LabConfig' '/v' 'BypassTPMCheck' '/t' 'REG_DWORD' '/d' '1' '/f' | Out-Null
-    # & 'reg' 'add' 'HKLM\zSYSTEM\Setup\MoSetup' '/v' 'AllowUpgradesWithUnsupportedTPMOrCPU' '/t' 'REG_DWORD' '/d' '1' '/f' | Out-Null
-    logging.info("Tweaking complete!")
-    logging.info("Unmounting Registry...")
-    #$regKey.Close()
-    # reg unload HKLM\zCOMPONENTS | Out-Null
-    # reg unload HKLM\zDRIVERS | Out-Null
-    # reg unload HKLM\zDEFAULT | Out-Null
-    # reg unload HKLM\zNTUSER | Out-Null
-    # reg unload HKLM\zSCHEMA | Out-Null
-    #$regKey.Close()
-    # reg unload HKLM\zSOFTWARE
-    # reg unload HKLM\zSYSTEM | Out-Null
-    logging.info("Unmounting image...")
-    #Dismount-WindowsImage -Path $ScratchDisk\scratchdir -Save
-    #Clear-Host
-
-    logging.info("The tiny11 image is now completed. Proceeding with the making of the ISO...")
+    logging.info("The image is now completed. Proceeding with constructing the ISO...")
     logging.info("Copying unattended file for bypassing MS account on OOBE...")
     #Copy-Item -Path "$PSScriptRoot\autounattend.xml" -Destination "$ScratchDisk\tiny11\autounattend.xml" -Force | Out-Null
+
     logging.info("Creating ISO image...")
     #$hostArchitecture = $Env:PROCESSOR_ARCHITECTURE
     #$ADKDepTools = "C:\Program Files (x86)\Windows Kits\10\Assessment and Deployment Kit\Deployment Tools\$hostarchitecture\Oscdimg"
@@ -288,6 +233,54 @@ def select_language(image, automated=False):
         language_index = validated_input(prompt, BAD_INPUT_MSG % "Invalid index", check)
 
     return language_index, str(languages[language_index])
+
+
+def execute_changesets(changesets, image, mount_path):
+# ******************************* WINDOWS IMAGE ****************************************
+    logging.info("Removing Edge and connected packages...")
+    remove_edge_browser(image, mount_path)
+
+    # Remove packages and applications.
+    logging.info("Removing packages...")
+    remove_packages(mount_path)
+    logging.info("Removing OneDrive...")
+    remove_onedrive(image, mount_path)
+    logging.info("Application removal complete!")
+
+    # Update the registry.
+    logging.info("Loading registry...")
+    load_registry()
+    logging.info("Bypassing system requirements on the system image")
+    bypass_requirements()
+    logging.info("Disabling Sponsored Apps")
+    disable_sponsored_apps()
+    logging.info("Disabling Chat icon")
+    disable_chat()
+    logging.info("Removing Edge related registries")
+    delete_edge_registry()
+    logging.info("Disabling OneDrive folder backup")
+    disable_onedrive_registry()
+    logging.info("Prevents installation or DevHome and Outlook:")
+    disable_devhome_outlook()
+    logging.info('Deleting Application Compatibility Appraiser')
+    delete_miscelaneous()
+    logging.info("Disabling Reserved Storage")
+    disable_reserved()
+    logging.info("Enabling Local Accounts on OOBE")
+    enable_oobe()
+    logging.info("Disabling User Telemetry:")
+    disable_user_telemetry()
+    logging.info("Disabling System Telemetry:")
+    disable_system_telemetry()
+    logging.info("Disabling BitLocker Device Encryption")
+    disable_bitlocker()
+    logging.info("Owner changed to Administrators.")
+    reset_ownership()
+    logging.info("Unmounting Registry...")
+    unload_registry()
+
+    # Boot image moved completely to config
+    logging.info("Tweaking complete!")
 
 
 if __name__ == "__main__":

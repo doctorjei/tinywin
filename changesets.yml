@@ -1,5 +1,20 @@
-edge_browser:
-  registry:
+boot_image:
+  bypass_requirements:
+    registry:
+      update:
+        - ["DEFAULT\\Control Panel\\UnsupportedHardwareNotificationCache", ] #?? '/v' 'SV1' '/t' 'REG_DWORD' '/d' '0' '/f' | Out-Null
+        - ["DEFAULT\\Control Panel\\UnsupportedHardwareNotificationCache", ] #?? '/v' 'SV2' '/t' 'REG_DWORD' '/d' '0' '/f' | Out-Null
+        - ["NTUSER\\Control Panel\\UnsupportedHardwareNotificationCache", ] #?? '/v' 'SV1' '/t' 'REG_DWORD' '/d' '0' '/f' | Out-Null
+        - ["NTUSER\\Control Panel\\UnsupportedHardwareNotificationCache", ] #?? '/v' 'SV2' '/t' 'REG_DWORD' '/d' '0' '/f' | Out-Null
+        - ["zSYSTEM\\Setup\\LabConfig", ] #?? '/v' 'BypassCPUCheck' '/t' 'REG_DWORD''/d' '1' '/f' | Out-Null
+        - ["zSYSTEM\\Setup\\LabConfig", ] #?? '/v' 'BypassRAMCheck' '/t' 'REG_DWORD''/d' '1' '/f' | Out-Null
+        - ["zSYSTEM\\Setup\\LabConfig", ] #?? '/v' 'BypassSecureBootCheck' '/t' 'REG_DWORD''/d' '1' '/f' | Out-Null
+        - ["zSYSTEM\\Setup\\LabConfig", ] #?? '/v' 'BypassStorageCheck' '/t' 'REG_DWORD''/d' '1' '/f' | Out-Null
+        - ["zSYSTEM\\Setup\\LabConfig", ] #?? '/v' 'BypassTPMCheck' '/t' 'REG_DWORD''/d' '1' '/f' | Out-Null
+        - ["zSYSTEM\\Setup\\LabConfig", ] #?? '/v' 'AllowUpgradesWithUnsupportedTPMUrCPU" '/t' 'REG_DWORD' '/d' '1' '/f' | Out-Null
+os_image:
+  edge_browser:
+    registry:
       update:
 #       - ["SOFTWARE\\SOME_KEY_NAME", 42]
       delete:
@@ -8,12 +23,12 @@ edge_browser:
       unprovision:
         - Microsoft.MicrosoftEdge.Stable # 3M
         - Microsoft.Edge.GameAssist      # 0.2M
-  delete_path:
-    - "Program Files (x86)/Microsoft/Edge"
-    - "Program Files (x86)/Microsoft/EdgeCore"
-    - "Program Files (x86)/Microsoft/EdgeUpdate"
-    - "Program Files (x86)/Microsoft/EdgeWebView"
-  copy_path:
+    delete_path:
+      - "Program Files (x86)/Microsoft/Edge"
+      - "Program Files (x86)/Microsoft/EdgeCore"
+      - "Program Files (x86)/Microsoft/EdgeUpdate"
+      - "Program Files (x86)/Microsoft/EdgeWebView"
+    copy_path:
 #    - [SRC_PATH, DEST_PATH]
-  callable: ["special_calls", "remove_edge"] # Format: [module, name]. If module is "" or None, check variables.
-  dependents:
+    callable: ["special_calls", "remove_edge"] # Format: [module, name]. If module is "" or None, check variables.
+    dependents:
